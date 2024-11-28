@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #000066;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: white;
+            padding: 20px;
+        }
+        #display {
+            background: #006400;
+            color: yellow;
+            border: 3px solid yellow;
+            border-radius: 15px;
+            padding: 20px 40px;
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .bar-container {
+            width: 100px;
+            height: 400px;
+            background: #333;
+            position: relative;
+            margin: 20px;
+        }
+        #bar {
+            width: 100%;
+            background: gray;
+            position: absolute;
+            bottom: 0;
+            height: 100%;
+        }
+        .controls {
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+        input {
+            font-size: 20px;
+            width: 200px;
+            text-align: center;
+            margin: 5px;
+            padding: 5px;
+        }
+        #line {
+            position: absolute;
+            width: 140%;
+            height: 4px;
+            background: magenta;
+            left: -20%;
+        }
+        #questionDisplay {
+            font-size: 24px;
+            text-align: center;
+            margin: 20px;
+            max-width: 600px;
+        }
+        .question-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="question-buttons">
+        <button onclick="selectQuestion(1)">Question 1</button>
+        <button onclick="selectQuestion(2)">Question 2</button>
+        <button onclick="selectQuestion(3)">Question 3</button>
+    </div>
+    
+    <div id="questionDisplay">Select a question to begin</div>
+    
+    <div id="display">100</div>
+    <div class="bar-container">
+        <div id="bar"></div>
+        <div id="line"></div>
+    </div>
+    <div class="controls">
+        <input type="text" id="answerInput" placeholder="Enter your answer" onkeypress="checkEnter(event)">
+        <button onclick="checkAnswer()">Submit Answer</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const bar = document.getElementById('bar');
+        const line = document.getElementById('line');
+        const questionDisplay = document.getElementById('questionDisplay');
+        const answerInput = document.getElementById('answerInput');
+        let counting = false;
+        let currentQuestion = null;
+
+        const questions = {
+            1: {
+                question: "Name a country that borders Turkey",
+                answers: {
+                    "greece": 50, "azerbaijan": 0, "armenia": 3, "georgia": 8,
+                    "bulgaria": 17, "syria": 24, "iran": 24, "iraq": 25
+                }
+            },
+            2: {
+                question: "Name a US city that was the predominant setting for a TV show",
+                answers: {
+                    "new york": 47, "boston": 27, "washington dc": 25, "seattle": 20,
+                    "chicago": 19, "baltimore": 7, "san francisco": 4, "los angeles": 3,
+                    "miami": 8, "denver": 1, "philadelphia": 0
+                }
+            },
+            3: {
+                question: "Name an English footballer who has scored in major international tournaments",
+                answers: {
+                    "harry kane": 62, "gary lineker": 45, "david beckham": 19,
+                    "steven gerrard": 10, "alan shearer": 6, "geoff hurst": 5,
+                    "jude bellingham": 5, "wayne rooney": 5, "bobby charlton": 4,
+                    "michael owen": 4, "john stones": 4, "mark wright": 4,
+                    "paul scholes": 3, "emile heskey": 3, "roger hunt": 3,
+                    "david platt": 3, "marcus rashford": 3, "bukayo saka": 3,
+                    "phil foden": 3, "jack grealish": 3, "raheem sterling": 3,
+                    "rio ferdinand": 2, "harry maguire": 2, "kieran trippier": 1,
+                    "dele alli": 0, "darren anderton": 0, "peter beardsley": 0,
+                    "ivor broadis": 0, "sol campbell": 0, "allan clarke": 0,
+                    "joe cole": 0, "peter crouch": 0, "jermain defoe": 0,
+                    "tom finney": 0, "trevor francis": 0, "ron flowers": 0,
+                    "fraser forster": 0, "jimmy greaves": 0, "mark hateley": 0,
+                    "owen hargreaves": 0, "johnny haynes": 0, "jordan henderson": 0,
+                    "gerry hitchens": 0, "derek kevan": 0, "jesse lingard": 0,
+                    "nat lofthouse": 0, "wilf mannion": 0, "paul mariner": 0,
+                    "stan mortensen": 0, "jimmy mullen": 0, "alan mullery": 0,
+                    "martin peters": 0, "bryan robson": 0, "trevor steven": 0,
+                    "gary stevens": 0, "daniel sturridge": 0, "matthew upson": 0,
+                    "chris waddle": 0, "tony woodcock": 0, "chris woods": 0,
+                    "ray wilkins": 0, "dennis wilshaw": 0
+                }
+            }
+        };
+
+        function selectQuestion(num) {
+            currentQuestion = num;
+            questionDisplay.textContent = questions[num].question;
+            reset();
+            answerInput.focus();
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                checkAnswer();
+            }
+        }
+
+        function checkAnswer() {
+            if (!currentQuestion || counting) return;
+            
+            const answer = answerInput.value.trim().toLowerCase();
+            const questionData = questions[currentQuestion];
+            
+            if (answer in questionData.answers) {
+                startCountdown(questionData.answers[answer]);
+            } else {
+                showWrong();
+            }
+            
+            answerInput.value = '';
+        }
+
+        function startCountdown(finalScore) {
+            if (counting) return;
+            reset();
+            
+            let score = 100;
+            counting = true;
+
+            setTimeout(() => {
+                const interval = setInterval(() => {
+                    if (!counting || score <= finalScore) {
+                        clearInterval(interval);
+                        if (counting) {
+                            bar.style.backgroundColor = 'magenta';
+                        }
+                        counting = false;
+                        return;
+                    }
+
+                    score--;
+                    display.textContent = score;
+                    bar.style.height = score + '%';
+                    line.style.bottom = score + '%';
+                }, 20);
+            }, 3000);
+        }
+
+        function showWrong() {
+            if (counting) return;
+            reset();
+            
+            setTimeout(() => {
+                display.textContent = 'X';
+                display.style.backgroundColor = 'darkred';
+                bar.style.backgroundColor = 'darkred';
+                line.style.display = 'none';
+            }, 3000);
+        }
+
+        function reset() {
+            counting = false;
+            display.textContent = '100';
+            display.style.backgroundColor = '#006400';
+            bar.style.height = '100%';
+            bar.style.backgroundColor = 'gray';
+            line.style.bottom = '100%';
+            line.style.display = 'block';
+            answerInput.value = '';
+        }
+    </script>
+</body>
+</html>
